@@ -7,11 +7,61 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = "3.9"
+requires-python = ">=3.9,<3.14"
 dependencies = [
+    "pyside6 (>=6.9.0,<7.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+ruff = "^0.11.6"
+mypy = "^1.15.0"
+
+
+[tool.ruff]
+# Longitud máxima de línea (compatible con Black)
+line-length = 88
+# Versión mínima de Python a la que apuntar para compatibilidad de código
+target-version = "py39"
+# Reglas a activar (E/W=pycodestyle, F=pyflakes, I=isort, UP=pyupgrade, B=bugbear, C4=comprehensions, ARG=unused-arguments, SIM=simplify)
+select = ["E", "F", "W", "I", "UP", "B", "C4", "ARG", "SIM"]
+# Reglas específicas a ignorar (empezamos sin ignorar ninguna)
+ignore = []
+# Indica a Ruff que el código fuente está en 'src/'
+src = ["src"]
+
+[tool.pytest.ini_options]
+# Versión mínima requerida de pytest
+minversion = "6.0"
+# Directorio donde buscar los tests
+testpaths = [
+    "tests",
+]
+# Opciones por defecto para ejecutar pytest
+# -ra: Muestra resumen extra excepto para tests pasados
+# -q: Modo silencioso
+# --cov: Activa cobertura de código para nuestro paquete
+# --cov-report: Muestra reporte de cobertura en terminal, indicando líneas faltantes
+addopts = "-ra -q --cov=src/capturador_de_audio_video --cov-report=term-missing"
+
+[tool.mypy]
+# Versión de Python a usar para el chequeo de tipos
+python_version = "3.9"
+# Advertir si una función retorna 'Any' implícitamente
+warn_return_any = true
+# Advertir sobre configuraciones de mypy no usadas
+warn_unused_configs = true
+# ¡Importante para librerías sin tipos completos como PySide/PyQt! Ignora errores de importación si no encuentra tipos para un módulo importado.
+ignore_missing_imports = true
+# Chequear cuerpos de funciones sin anotaciones de tipo
+check_untyped_defs = true
+# Permitir funciones sin anotaciones (podemos hacerlo más estricto luego)
+disallow_untyped_defs = false
+# Cómo seguir imports (normal es un buen punto medio)
+follow_imports = "normal"
