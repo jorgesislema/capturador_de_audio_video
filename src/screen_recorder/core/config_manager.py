@@ -1,94 +1,147 @@
+#!/usr/bin/env python3
 # src/screen_recorder/core/config_manager.py
 
-import json
+"""
+Gestor de configuración para el Capturador de Audio y Video.
+Maneja la carga y guardado de preferencias del usuario.
+"""
+
 import os
+import json
 import appdirs
-import sys
+from typing import Dict, Any, Optional
 
-# Importar utils para obtener defaults (si es necesario, opcional)
-# from . import audio_utils
+# Configurar rutas de aplicación
+APP_NAME = "capturador_de_audio_video"
+APP_AUTHOR = "jorge-sislema"
 
-APP_NAME = "ScreenRecorderApp"
-APP_AUTHOR = "ScreenRecorderDev"
-
-try:
-    config_dir = appdirs.user_config_dir(APP_NAME, APP_AUTHOR)
-except Exception as e:
-    print(f"Error al obtener directorio de configuración de appdirs: {e}", file=sys.stderr)
-    config_dir = os.path.join(os.path.expanduser("~"), f".{APP_NAME.lower()}_config")
-
+# Obtener directorio de configuración específico de la plataforma
+config_dir = appdirs.user_config_dir(APP_NAME, APP_AUTHOR)
 config_file = os.path.join(config_dir, "config.json")
 
-# --- Configuración por Defecto Actualizada ---
-DEFAULT_CONFIG = {
-    "output_dir": None,
-    "ffmpeg_path": None,
-    # Nuevas claves de audio
-    "record_audio_mic": True,           # Grabar micrófono por defecto: Sí
-    "audio_mic_device_name": None,      # Usar dispositivo por defecto si es None
-    "record_audio_loopback": True,      # Grabar audio sistema por defecto: Sí
-    "audio_loopback_device_name": None, # Intentar detectar por defecto si es None
-    # Futuras: format, quality, framerate, etc.
+# Configuración por defecto
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "output_dir": os.path.expanduser("~/Videos"),
+    "record_audio_mic": True,
+    "record_audio_loopback": True,
+    "audio_mic_device_name": None,  # Se detectará automáticamente
+    "audio_loopback_device_name": None,  # Se detectará automáticamente
+    "ffmpeg_path": None,  # Se buscará en el PATH
+    "video_quality": "medium",  # low, medium, high
+    "video_framerate": 30,
+    "file_format": "mp4"
 }
 
-def ensure_config_dir_exists() -> bool:
-    """Asegura que el directorio de configuración exista."""
+def ensure_config_dir() -> bool:
+    """
+    Crea el directorio de configuración si no existe.
+    
+    Returns:
+        bool: True si el directorio existe o se creó correctamente, False en caso contrario.
+    """
     try:
-        os.makedirs(config_dir, exist_ok=True)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
         return True
-    except OSError as e:
-        print(f"Error al crear directorio de configuración '{config_dir}': {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Error al crear directorio de configuración: {e}")
         return False
 
-def load_config() -> dict:
+def load_config() -> Dict[str, Any]:
     """
-    Carga la configuración desde el archivo JSON. Combina con valores por defecto.
+    Carga la configuración desde el archivo JSON.
+    Si no existe, crea una configuración por defecto.
+    
+    Returns:
+        Dict[str, Any]: La configuración cargada o por defecto.
     """
-    current_defaults = DEFAULT_CONFIG.copy()
-    # Opcional: Podríamos intentar obtener nombres de dispositivo por defecto aquí
-    # si los valores en DEFAULT_CONFIG son None, pero es mejor hacerlo en Recorder
-    # para tener la info más actualizada al iniciar la app.
-
     if not os.path.exists(config_file):
-        print(f"Archivo de configuración no encontrado en '{config_file}'. Usando valores por defecto.")
-        return current_defaults
-
+        print(f"Archivo de configuración no encontrado en {config_file}.")
+        print("Creando configuración por defecto...")
+        if ensure_config_dir():
+            save_config(DEFAULT_CONFIG)
+        return DEFAULT_CONFIG.copy()
+    
     try:
         with open(config_file, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
+            config = json.load(f)
+            
+        # Asegurar que todos los valores por defecto existan
+        for key, value in DEFAULT_CONFIG.items():
+            if key not in config:
+                config[key] = value
+                
+        return config
+    except Exception as e:
+        print(f"Error al cargar configuración: {e}")
+        return DEFAULT_CONFIG.copy()
 
-        loaded_config = current_defaults # Empezar con defaults actualizados
-        if isinstance(config_data, dict):
-            # Sobrescribir defaults solo con las claves presentes en el archivo
-            for key in current_defaults: # Iterar sobre claves de default
-                if key in config_data:
-                    loaded_config[key] = config_data[key]
-        else:
-             print(f"Advertencia: El archivo '{config_file}' no es un JSON válido. Usando defaults.", file=sys.stderr)
-             return current_defaults
-
-        print(f"Configuración cargada desde '{config_file}': {loaded_config}")
-        return loaded_config
-    except (FileNotFoundError, json.JSONDecodeError, TypeError, OSError) as e:
-        print(f"Error al cargar config desde '{config_file}': {e}. Usando defaults.", file=sys.stderr)
-        return current_defaults
-
-def save_config(config_data: dict) -> bool:
+def save_config(config: Dict[str, Any]) -> bool:
     """
-    Guarda el diccionario de configuración proporcionado en el archivo JSON.
-    Solo guarda claves que existen en DEFAULT_CONFIG.
+    Guarda la configuración en un archivo JSON.
+    
+    Args:
+        config (Dict[str, Any]): La configuración a guardar.
+        
+    Returns:
+        bool: True si se guardó correctamente, False en caso contrario.
     """
-    if not ensure_config_dir_exists():
+    if not ensure_config_dir():
         return False
-
+    
     try:
-        # Filtrar para guardar solo las claves conocidas
-        config_to_save = {key: config_data.get(key) for key in DEFAULT_CONFIG if key in config_data}
-
         with open(config_file, 'w', encoding='utf-8') as f:
-            json.dump(config_to_save, f, indent=4, ensure_ascii=False)
-        print(f"Configuración guardada en '{config_file}': {config_to_save}")
+            json.dump(config, f, indent=4)
+        print(f"Configuración guardada en {config_file}")
         return True
-    except (OSError, TypeError) as e:
-        print(f"Error al guardar config en '{config_file}': {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Error al guardar configuración: {e}")
         return False
+
+def get_config_path() -> str:
+    """
+    Devuelve la ruta al archivo de configuración.
+    
+    Returns:
+        str: Ruta al archivo de configuración.
+    """
+    return config_file
+
+def get_config_value(key: str, default: Any = None) -> Any:
+    """
+    Obtiene un valor específico de la configuración.
+    
+    Args:
+        key (str): La clave del valor a obtener.
+        default (Any, opcional): Valor por defecto si no existe la clave.
+        
+    Returns:
+        Any: El valor de la configuración o el valor por defecto.
+    """
+    config = load_config()
+    return config.get(key, default)
+
+def set_config_value(key: str, value: Any) -> bool:
+    """
+    Establece un valor específico en la configuración y la guarda.
+    
+    Args:
+        key (str): La clave a establecer.
+        value (Any): El valor a establecer.
+        
+    Returns:
+        bool: True si se guardó correctamente, False en caso contrario.
+    """
+    config = load_config()
+    config[key] = value
+    return save_config(config)
+
+if __name__ == "__main__":
+    # Código de prueba para desarrollo
+    print(f"Directorio de configuración: {config_dir}")
+    print(f"Archivo de configuración: {config_file}")
+    
+    config = load_config()
+    print("Configuración actual:")
+    for key, value in config.items():
+        print(f"  {key}: {value}")
