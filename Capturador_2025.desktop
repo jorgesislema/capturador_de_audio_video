@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Capturador de Audio y Video (2025)
+Comment=Aplicación para grabar video, audio y capturar pantalla
+Exec=/home/anarquia/Documentos/PROGRAMAS/capturador_de_audio_video/ejecutar_capturador.sh
+Icon=/home/anarquia/Documentos/PROGRAMAS/capturador_de_audio_video/packaging/linux/recorder.svg
+Terminal=true
+Type=Application
+Categories=AudioVideo;Utility;
+Keywords=screen;recorder;audio;video;capture;

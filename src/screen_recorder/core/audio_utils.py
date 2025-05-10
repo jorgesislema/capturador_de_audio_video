@@ -60,10 +60,24 @@ def print_audio_devices() -> None:
         devices = get_all_audio_devices()
         print("\n=== Dispositivos de Audio Disponibles ===")
         for i, dev in enumerate(devices):
-            host_api = dev.get('hostapi', 0)
-            channels_in = dev.get('max_input_channels', 0)
-            channels_out = dev.get('max_output_channels', 0)
-            name = dev.get('name', 'Desconocido')
+            # Manejar diferentes tipos de objetos de dispositivo
+            if isinstance(dev, dict):
+                # Si es un diccionario
+                host_api = dev.get('hostapi', 0)
+                channels_in = dev.get('max_input_channels', 0)
+                channels_out = dev.get('max_output_channels', 0)
+                name = dev.get('name', 'Desconocido')
+            else:
+                # Si es un objeto DeviceList
+                try:
+                    host_api = getattr(dev, 'hostapi', 0)
+                    channels_in = getattr(dev, 'max_input_channels', 0)
+                    channels_out = getattr(dev, 'max_output_channels', 0)
+                    name = getattr(dev, 'name', 'Desconocido')
+                except Exception as e:
+                    print(f"Error al acceder a atributos del dispositivo {i}: {e}")
+                    continue
+            
             default_mark = ""
             
             if i == sd.default.device[0]:
@@ -86,37 +100,69 @@ def print_audio_devices() -> None:
 def find_loopback_device_info() -> Optional[Dict[str, Any]]:
     """
     Intenta encontrar un dispositivo de loopback para capturar audio del sistema.
-    En Windows, busca 'Stereo Mix', 'Wave Out', 'What U Hear', etc.
+    En Windows, busca 'Stereo Mix', 'What U Hear', 'Wave Out', etc.
     En Linux, busca un dispositivo monitor.
     
     Returns:
         Optional[Dict[str, Any]]: Información del dispositivo loopback o None si no se encuentra.
     """
-    devices = get_all_audio_devices()
-    
-    # Términos de búsqueda para encontrar dispositivos loopback
-    search_terms = ['stereo mix', 'what u hear', 'wave out', 'mix', 'loopback']
-    
-    system = platform.system().lower()
-    
-    # Búsqueda específica por plataforma
-    for device in devices:
-        name = device.get('name', '').lower()
+    try:
+        devices = get_all_audio_devices()
         
-        # En Windows, buscar nombres comunes de loopback
-        if system == 'windows':
-            if any(term in name for term in search_terms):
-                if device.get('max_input_channels', 0) > 0:  # Debe tener canales de entrada
+        # Términos de búsqueda para encontrar dispositivos loopback
+        search_terms = ['stereo mix', 'what u hear', 'wave out', 'mix', 'loopback']
+        
+        system = platform.system().lower()
+        
+        # Búsqueda específica por plataforma
+        for device in devices:
+            # Comprobar el tipo de device y manejarlo apropiadamente
+            if isinstance(device, dict):
+                # Si es un diccionario, usamos get() como estaba previsto
+                name = device.get('name', '').lower()
+                max_input_channels = device.get('max_input_channels', 0)
+            else:
+                # Si es un objeto DeviceList, accedemos a los atributos directamente
+                try:
+                    name = getattr(device, 'name', '').lower()
+                    max_input_channels = getattr(device, 'max_input_channels', 0)
+                except Exception as e:
+                    print(f"Error al acceder a atributos del dispositivo: {e}")
+                    continue
+            
+            # En Windows, buscar nombres comunes de loopback
+            if system == 'windows':
+                if any(term in name for term in search_terms):
+                    if max_input_channels > 0:  # Debe tener canales de entrada
+                        return device
+            
+            # En Linux con PulseAudio, buscar dispositivos "Monitor of"
+            elif system == 'linux':
+                if ('monitor' in name or '.monitor' in name) and max_input_channels > 0:
                     return device
         
-        # En Linux con PulseAudio, buscar dispositivos "Monitor of"
-        elif system == 'linux':
-            if 'monitor' in name and device.get('max_input_channels', 0) > 0:
-                return device
-    
-    # No se encontró un dispositivo específico
-    print("No se encontró un dispositivo loopback. La grabación de audio del sistema podría no funcionar.")
-    return None
+        # No se encontró un dispositivo específico
+        if system == 'linux':
+            print("\nAVISO: No se encontró dispositivo para capturar audio del sistema.")
+            print("Para habilitar este dispositivo en Linux:")
+            print("1. Abre 'pavucontrol' (Instalalo con: sudo apt install pavucontrol)")
+            print("2. Ve a la pestaña 'Dispositivos de entrada'")
+            print("3. Cambia 'Mostrar:' a 'Todos los dispositivos de entrada'")
+            print("4. Debería aparecer 'Monitor of...' para cada salida de audio")
+            print("5. Asegúrate de que no esté silenciado\n")
+        elif system == 'windows':
+            print("\nAVISO: No se encontró dispositivo para capturar audio del sistema.")
+            print("Para habilitar 'Stereo Mix' en Windows:")
+            print("1. Haz clic derecho en el icono de sonido en la barra de tareas")
+            print("2. Selecciona 'Sonidos' o 'Abrir configuración de sonido'")
+            print("3. Ve a 'Administrar dispositivos de audio' o 'Dispositivos de grabación'")
+            print("4. Haz clic derecho en un área vacía y marca 'Mostrar dispositivos deshabilitados'")
+            print("5. Haz clic derecho en 'Stereo Mix' y selecciona 'Habilitar'\n")
+        
+        return None
+    except Exception as e:
+        print(f"Error al buscar dispositivo loopback: {e}")
+        return None
 
 def get_device_by_name(name: str) -> Optional[Dict[str, Any]]:
     """
@@ -135,7 +181,16 @@ def get_device_by_name(name: str) -> Optional[Dict[str, Any]]:
     name_lower = name.lower()
     
     for device in devices:
-        device_name = device.get('name', '')
+        # Manejar tanto diccionarios como objetos DeviceList
+        if isinstance(device, dict):
+            device_name = device.get('name', '')
+        else:
+            try:
+                device_name = getattr(device, 'name', '')
+            except Exception as e:
+                print(f"Error al acceder al nombre del dispositivo: {e}")
+                continue
+                
         if device_name.lower() == name_lower:
             return device
     
