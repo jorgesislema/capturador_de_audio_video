@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Fondo del icono -->
+  <rect x="2" y="2" width="44" height="44" rx="8" fill="#3949AB" />
+  
+  <!-- Forma de pantalla -->
+  <rect x="8" y="8" width="32" height="24" rx="2" fill="#E0E0E0" />
+  
+  <!-- Botón de grabación -->
+  <circle cx="24" cy="36" r="6" fill="#F44336" />
+  
+  <!-- Onda de audio izquierda -->
+  <path d="M14,28 Q14,32 14,36" stroke="#4CAF50" stroke-width="2" fill="none" />
+  <path d="M12,30 Q12,32 12,34" stroke="#4CAF50" stroke-width="2" fill="none" />
+  <path d="M10,31 Q10,32 10,33" stroke="#4CAF50" stroke-width="2" fill="none" />
+  
+  <!-- Onda de audio derecha -->
+  <path d="M34,28 Q34,32 34,36" stroke="#4CAF50" stroke-width="2" fill="none" />
+  <path d="M36,30 Q36,32 36,34" stroke="#4CAF50" stroke-width="2" fill="none" />
+  <path d="M38,31 Q38,32 38,33" stroke="#4CAF50" stroke-width="2" fill="none" />
+</svg>
