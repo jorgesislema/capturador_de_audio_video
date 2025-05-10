@@ -1,14 +1,47 @@
-.qodo
-__pycache__/
-*.pyc
-*.pyo
+# Entorno virtual
+.venv/
 venv/
-.venv/,
-env/
-.env
-.vscode/
-.idea/
+ENV/
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
 dist/
-*.egg-info
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Archivos temporales
+=0.5.1
+=1.4.4
+=6.9.0
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Archivos de sistema
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos generados al instalar
 *.log
