@@ -1,0 +1,15 @@
+# Dependencias principales
+PySide6>=6.9.0,<7.0.0
+appdirs>=1.4.4,<2.0.0
+sounddevice>=0.5.1,<0.6.0
+
+# Dependencias de desarrollo
+pytest>=8.3.5
+pytest-cov>=6.1.1
+ruff>=0.11.6
+mypy>=1.15.0
+
+# Nota: También necesitas tener FFmpeg instalado en tu sistema
+# Para Ubuntu/Debian: sudo apt install ffmpeg
+# Para Arch: sudo pacman -S ffmpeg
+# Para Fedora: sudo dnf install ffmpeg
